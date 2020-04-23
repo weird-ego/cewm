@@ -1,0 +1,2 @@
+# cewm
+centi window manager
