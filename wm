@@ -1,0 +1,83 @@
+root="$(lsw -r)"
+W="$(wattr w $root)"
+H="$(wattr h $root)"
+
+wm="/dev/shm/wmutils"; rm -rf $wm; mkdir $wm
+wa="$wm/wa"; mkdir $wa
+
+active=""
+
+_rot() { fst=$1; shift; echo $@ $fst; }
+draw() {
+    [[ "$active" != "" ]]
+    if [[ $? -eq 0 ]]; then
+        top="$(echo $active | cut -d' ' -f 1 )"
+        wtp 0 0 $W $H $top
+        chwso -r $top
+        wtf $top
+    fi
+}
+rot() {
+    active="$(_rot $active)"
+    draw
+}
+pop() {
+    active="$(echo $active | sed "s/$1//" | sed "s/  / /")"
+    draw
+}
+push() {
+    active="$1 $active"
+    draw
+}
+
+onwew() {
+    wattr o $1
+    if [[ $? -ne 0 ]]; then
+        case $1 in
+            CREATE)
+                [[ "$(atomx WM_NAME $2)" == "" ]] && [[ "$(atomx WM_CLASS $2)" == "" ]]
+                if [[ $? -ne 0 ]]; then
+                    mkdir $wa/$2
+                    mkdir $wa/$2/WM_NAME
+                    touch $wa/$2/WM_NAME/"$(atomx WM_NAME $2)"
+                    mkdir $wa/$2/WM_CLASS
+                    touch $wa/$2/WM_CLASS/"$(atomx WM_CLASS $2)"
+                else
+                    ignw -s $2
+                fi
+            ;;
+            MAP)
+                last_event="$(cat $wa/$2/last_event)"
+                [[ "$last_event" == "CREATE" ]]
+                [[ $? -eq 0 ]] && push $2
+            ;;
+            UNMAP)
+                pop $2
+            ;;
+            DESTROY)
+                rm -rf $wa/$2
+                pop $2
+            ;;
+        esac
+        echo $1 > $wa/$2/last_event
+    fi
+}
+
+onsxhkd() {
+    case $1 in
+        cycle)
+        rot
+        ;;
+        kill)
+        killw -p "$(pfw)"
+        ;;
+    esac
+}
+
+nc -k -l -p 2000 | \
+while IFS=: read type arguments; do
+    case $type in
+        wew) onwew $arguments ;;
+        sxhkd) onsxhkd $arguments ;;
+    esac
+done
