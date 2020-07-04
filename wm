@@ -6,13 +6,19 @@ wm="/dev/shm/wmutils"; rm -rf $wm; mkdir $wm
 wa="$wm/wa"; mkdir $wa
 
 active=""
+always_max="[emacs emacs@navi]"
 
 _rot() { fst=$1; shift; echo $@ $fst; }
 draw() {
     [[ "$active" != "" ]]
     if [[ $? -eq 0 ]]; then
         top="$(echo $active | cut -d' ' -f 1 )"
-        wtp 0 0 $W $H $top
+        name="$(atomx WM_NAME $top)"
+        class="$(atomx WM_CLASS $top)"
+        [[ $always_max =~ "*[$name $class]*" ]]
+        if [ $? -ne 0 ] ; then
+           wtp 0 0 $W $H $top
+        fi
         chwso -r $top
         wtf $top
     fi
@@ -35,7 +41,9 @@ onwew() {
     if [[ $? -ne 0 ]]; then
         case $1 in
             CREATE)
-                [[ "$(atomx WM_NAME $2)" == "" ]] && [[ "$(atomx WM_CLASS $2)" == "" ]]
+                name="$(atomx WM_NAME $2)"
+                class="$(atomx WM_CLASS $2)"
+                [[ $name == "" ]] && [[ $class == "" ]]
                 if [[ $? -ne 0 ]]; then
                     mkdir $wa/$2
                     mkdir $wa/$2/WM_NAME
