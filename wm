@@ -4,36 +4,71 @@ H="$(wattr h $root)"
 
 wm="/dev/shm/wmutils"; rm -rf $wm; mkdir $wm
 wa="$wm/wa"; mkdir $wa
+ws="$wm/ws"; mkdir $ws
 
-active=""
-always_max="[emacs emacs@navi]"
+for num in 1 2 3 4
+do
+    touch $ws/$num
+done
+
+cws="1"
 
 _rot() { fst=$1; shift; echo $@ $fst; }
-draw() {
-    [[ "$active" != "" ]]
-    if [[ $? -eq 0 ]]; then
-        top="$(echo $active | cut -d' ' -f 1 )"
-        name="$(atomx WM_NAME $top)"
-        class="$(atomx WM_CLASS $top)"
-        [[ $always_max =~ "*[$name $class]*" ]]
-        if [ $? -ne 0 ] ; then
-           wtp 0 0 $W $H $top
+rot() {
+    num="$1"
+    order="$(cat $ws/$num)"
+    next="$(_rot $order)"
+    echo $next > $ws/$num
+}
+
+register() {
+    mkdir $wa/$2
+    mkdir $wa/$2/WM_NAME
+    touch $wa/$2/WM_NAME/"$(atomx WM_NAME $2)"
+    mkdir $wa/$2/WM_CLASS
+    touch $wa/$2/WM_CLASS/"$(atomx WM_CLASS $2)"
+    [[ -s $ws/$cws ]]
+    if [[ $? -eq 1 ]]; then
+        echo "$2" > $ws/$1
+        wtp 0 0 $W $H $2
+    else
+        sed -i -e "s/\$/ $2/" $ws/$1
+    fi
+    wtf $2
+}
+
+unregister() {
+    num="$1"
+    [ -z "$num" ]
+    if [ $? -ne 0 ]; then
+        rm -rf /dev/shm/wmutils/wa/$num
+        count="$(cat $ws/$cws | wc -w)"
+        [[ $count -eq 1 ]]
+        if [ $? -ne 0 ]; then
+            sed -i -e "s/$num//" $ws/$cws
+            sed -i -e "s/ //g" $ws/$cws
+        else
+            sed -i -e "s/$num//" $ws/$cws
         fi
-        chwso -r $top
-        wtf $top
     fi
 }
-rot() {
-    active="$(_rot $active)"
-    draw
-}
-pop() {
-    active="$(echo $active | sed "s/$1//" | sed "s/  / /")"
-    draw
-}
-push() {
-    active="$1 $active"
-    draw
+
+
+fromws_tows() {
+    prev="$1"
+    next="$2"
+    [[ $prev -ne $next ]]
+    if [[ $? -ne 0 ]]; then
+        for wid in $(sed -e 's/ /  /g' $ws/$prev)
+        do
+            mapw -u $wid
+        done
+
+        for wid in $(sed -e 's/ /  /g' $ws/$next)
+        do
+            mapw -m $wid
+        done 
+    fi
 }
 
 onwew() {
@@ -45,26 +80,20 @@ onwew() {
                 class="$(atomx WM_CLASS $2)"
                 [[ $name == "" ]] && [[ $class == "" ]]
                 if [[ $? -ne 0 ]]; then
-                    mkdir $wa/$2
-                    mkdir $wa/$2/WM_NAME
-                    touch $wa/$2/WM_NAME/"$(atomx WM_NAME $2)"
-                    mkdir $wa/$2/WM_CLASS
-                    touch $wa/$2/WM_CLASS/"$(atomx WM_CLASS $2)"
+                    register $cws $2
                 else
                     ignw -s $2
                 fi
             ;;
             MAP)
-                last_event="$(cat $wa/$2/last_event)"
-                [[ "$last_event" == "CREATE" ]]
-                [[ $? -eq 0 ]] && push $2
+                echo 1
             ;;
             UNMAP)
-                pop $2
+                wtf "$(cut -d' ' -f 1 $ws/$cws)"
             ;;
             DESTROY)
-                rm -rf $wa/$2
-                pop $2
+                unregister "$(pfw)"
+                wtf "$(cut -d' ' -f 1 $ws/$cws)"
             ;;
         esac
         echo $1 > $wa/$2/last_event
@@ -74,10 +103,18 @@ onwew() {
 onsxhkd() {
     case $1 in
         cycle)
-        rot
+        rot $cws
         ;;
         kill)
         killw -p "$(pfw)"
+        wtf "$(cut -d' ' -f 1 $ws/$cws)"
+        ;;
+        jump)
+        fromws_tows $cws $2
+        cws=$2
+        ;;
+        maximize)
+        wtp 0 0 $W $H $2
         ;;
     esac
 }
