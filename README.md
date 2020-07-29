@@ -18,3 +18,4 @@ wm consists of 3 parts:
 - wmutils (both [core](https://github.com/wmutils/core) and [opt](https://github.com/wmutils/opt) for `wew`)
 - regular *nix binaries (`car`, `echo`, `sed`, `mkdir`, `touch`, `rm`, etc.)
 - `sh`
+- (optional) `sxhkd` for using `call` with keyboard combinations
