@@ -14,7 +14,7 @@ wm consists of 3 parts:
   acts accordingly
 
 # dependencies
-- bsd netcat (ability to continue after peer disconnect: -k option)
-- wmutils (both core and contrib for wew)
-- regular *nix binaries (car, echo, sed, mkdir, touch, rm, etc.)
-- sh
+- bsd `netcat` (ability to continue after peer disconnect: `-k` option)
+- wmutils (both [core](https://github.com/wmutils/core) and [opt](https://github.com/wmutils/opt) for wew)
+- regular *nix binaries (`car`, `echo`, `sed`, `mkdir`, `touch`, `rm`, etc.)
+- `sh`
