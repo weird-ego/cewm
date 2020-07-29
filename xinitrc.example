@@ -1,1 +1,3 @@
+sxhkd &
+sh ~/cewm/wm &
 wew | sh ~/cewm/proxy

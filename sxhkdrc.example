@@ -1,0 +1,31 @@
+# terminal emulator
+super + Return
+	st -f monofur-20
+
+# program launcher
+super + @space
+	dmenu_run
+
+# lock
+super + l
+	i3lock
+
+# make sxhkd reload its configuration files:
+super + Escape
+	pkill -USR1 -x sxhkd
+
+# cycle through windows on current workspace
+super + c
+    sh ~/cewm/call cycle
+
+# kill focused window
+super + w
+    sh ~/cewm/call kill
+
+# jumps to workspaces
+super + {1,2,3,4}
+    sh ~/cewm/call jump {1,2,3,4}
+
+# maximize window
+super + m
+    sh ~/cewm/call maximize

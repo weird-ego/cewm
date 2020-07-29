@@ -14,6 +14,20 @@ done
 cws="1"
 
 _rot() { fst=$1; shift; echo $@ $fst; }
+topel() { fst=$1; echo $fst; }
+topwin() {
+    count="$(cat $ws/$cws | wc -w)"
+    [[ $count -eq 1 ]]
+    if [ $? -ne 0 ]; then
+        echo "$(cut -d' ' -f 1 $ws/$cws)"
+    else
+        echo "$(cat $ws/$cws)"
+    fi
+}
+ontop() {
+    chwso -r "$(topwin)"
+    wtf "$(topwin)"
+}
 rot() {
     num="$1"
     order="$(cat $ws/$num)"
@@ -22,10 +36,8 @@ rot() {
 }
 
 register() {
-    mkdir $wa/$2
-    mkdir $wa/$2/WM_NAME
+    mkdir -p "$wa/$2/"{WM_NAME,WM_CLASS}
     touch $wa/$2/WM_NAME/"$(atomx WM_NAME $2)"
-    mkdir $wa/$2/WM_CLASS
     touch $wa/$2/WM_CLASS/"$(atomx WM_CLASS $2)"
     [[ -s $ws/$cws ]]
     if [[ $? -eq 1 ]]; then
@@ -34,6 +46,7 @@ register() {
     else
         sed -i -e "s/\$/ $2/" $ws/$1
     fi
+    chwb -s 2 -c 0xa89984 $2
     wtf $2
 }
 
@@ -41,7 +54,7 @@ unregister() {
     num="$1"
     [ -z "$num" ]
     if [ $? -ne 0 ]; then
-        rm -rf /dev/shm/wmutils/wa/$num
+        rm -rf "/dev/shm/wmutils/wa/$num"
         count="$(cat $ws/$cws | wc -w)"
         [[ $count -eq 1 ]]
         if [ $? -ne 0 ]; then
@@ -57,15 +70,13 @@ unregister() {
 fromws_tows() {
     prev="$1"
     next="$2"
-    [[ $prev -ne $next ]]
-    if [[ $? -ne 0 ]]; then
-        for wid in $(sed -e 's/ /  /g' $ws/$prev)
-        do
+    [[ $prev -eq $next ]]
+    if [ $? -ne 0 ]; then
+        for wid in $(sed -e 's/ /  /g' $ws/$prev); do
             mapw -u $wid
         done
 
-        for wid in $(sed -e 's/ /  /g' $ws/$next)
-        do
+        for wid in $(sed -e 's/ /  /g' $ws/$next); do
             mapw -m $wid
         done 
     fi
@@ -86,14 +97,13 @@ onwew() {
                 fi
             ;;
             MAP)
-                echo 1
             ;;
             UNMAP)
-                wtf "$(cut -d' ' -f 1 $ws/$cws)"
+                wtf "$(topwin)"
             ;;
             DESTROY)
-                unregister "$(pfw)"
-                wtf "$(cut -d' ' -f 1 $ws/$cws)"
+                unregister $2
+                wtf "$(topwin)"
             ;;
         esac
         echo $1 > $wa/$2/last_event
@@ -104,6 +114,7 @@ onsxhkd() {
     case $1 in
         cycle)
         rot $cws
+        ontop $cws
         ;;
         kill)
         killw -p "$(pfw)"
@@ -114,7 +125,8 @@ onsxhkd() {
         cws=$2
         ;;
         maximize)
-        wtp 0 0 $W $H $2
+        chwb -s 0 "$(pfw)"
+        wtp 0 0 $W $H "$(pfw)"
         ;;
     esac
 }
